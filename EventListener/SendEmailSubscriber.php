@@ -7,12 +7,11 @@ use Mautic\EmailBundle\Helper\MailHelper;
 use Mautic\EmailBundle\Model\EmailModel;
 use Mautic\LeadBundle\Entity\Company;
 use Mautic\UserBundle\Model\UserModel;
-use MauticPlugin\LeuchtfeuerCompanyPointsBundle\Entity\CompanyPoint;
 use MauticPlugin\LeuchtfeuerCompanyPointsBundle\Event\CompanyTriggerBuilderEvent;
 use MauticPlugin\LeuchtfeuerCompanyPointsBundle\Form\Type\CompanySubmitActionEmailType;
 use MauticPlugin\LeuchtfeuerCompanyPointsBundle\LeuchtfeuerCompanyPointsEvents;
 use MauticPlugin\LeuchtfeuerCompanyPointsBundle\Model\CompanyTriggerModel;
-use MauticPlugin\LeuchtfeuerCompanyTagsBundle\Entity\CompanyTags;
+use MauticPlugin\LeuchtfeuerCompanySegmentsBundle\Model\CompanySegmentModel;
 use MauticPlugin\LeuchtfeuerCompanyTagsBundle\Event\CompanyTagsEvent;
 use MauticPlugin\LeuchtfeuerCompanyTagsBundle\LeuchtfeuerCompanyTagsEvents;
 use MauticPlugin\LeuchtfeuerCompanyTagsBundle\Model\CompanyTagModel;
@@ -28,6 +27,7 @@ class SendEmailSubscriber implements EventSubscriberInterface
         private UserModel           $userModel,
         private EmailModel          $emailModel,
         private CompanyTagModel     $companyTagModel,
+        private CompanySegmentModel $companySegmentModel,
     )
     {
     }
@@ -72,6 +72,7 @@ class SendEmailSubscriber implements EventSubscriberInterface
         }
 
         foreach ($eventTriggers as $eventTrigger) {
+
             if (in_array($eventTrigger->getId(), $eventLoggedIds)) {
                 continue;
             }
@@ -135,21 +136,38 @@ class SendEmailSubscriber implements EventSubscriberInterface
     private function getTokens(Company $company): array
     {
         $fields = $company->getFields();
-        $companyTags = $this->companyTagModel->getTagsByCompany($company);
-        $companyTagsString = '';
-        foreach ($companyTags as $companyTag) {
-            $companyTagsString .= $companyTag->getName() . ', ';
-        }
+        $companyTagsString = $this->getCompanyTagsString($company);
+        $companySegmentsString = $this->getCompanySegmentsString($company);
 
         return [
-            '{company_name}' => $company->getName(),
-            '{country}' => $company->getCountry(),
-            '{industry_tags}' => $fields['core']['companyindustry_tags']['value']??'',
+            '{contactfield=companyname}' => $company->getName(),
+            '{contactfield=companycountry}' => $company->getCountry(),
+            '{contactfield=industry_tags}' => $fields['professional']['companyindustry']['value']??'',
             '{companynumber_of_employees}' => $fields['professional']['companynumber_of_employees']['value']??'',
-            '{companyannual_revenue}' => $fields['professional']['companyannual_revenue']['value']??'',
-            '{company_score}' => $fields['core']['score_calculated']['value']??'',
-            '{company_tags}' => $companyTagsString,
-            '{company_segments}' => 'test company segments',
+            '{contactfield=companynumber_of_employees}' => $fields['professional']['companyannual_revenue']['value']??'',
+            '{companyfield=points_calculated}' => $fields['core']['score_calculated']['value']??'',
+            '{companyfield=list_tag_names}' => $companyTagsString,
+            '{companyfield=list_segment_names}' => $companySegmentsString,
         ];
+    }
+
+    private function getCompanySegmentsString(Company $company): string
+    {
+        $companySegments = $this->companySegmentModel->getCompaniesSegmentsRepository()->findBy(['company' => $company]);
+        $companySegmentsString = [];
+        foreach ($companySegments as $companySegment) {
+            $companySegmentsString[]= $companySegment->getCompanySegment()->getName();
+        }
+        return implode(', ', $companySegmentsString);
+    }
+
+    private function getCompanyTagsString(Company $company): string
+    {
+        $companyTags = $this->companyTagModel->getTagsByCompany($company);
+        $companyTagsString = [];
+        foreach ($companyTags as $companyTag) {
+            $companyTagsString[]= $companyTag->getName();
+        }
+        return implode(', ', $companyTagsString);
     }
 }

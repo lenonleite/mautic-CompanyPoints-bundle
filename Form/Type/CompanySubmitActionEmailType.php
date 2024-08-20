@@ -55,7 +55,7 @@ class CompanySubmitActionEmailType extends AbstractType
             'email_to_owner',
             YesNoButtonGroupType::class,
             [
-                'label' => 'mautic.form.action.sendemail.emailtoowner',
+                'label' => 'mautic.companypoints.sendemail.emailtoowner',
                 'data' => $default,
             ]
         );
@@ -66,7 +66,7 @@ class CompanySubmitActionEmailType extends AbstractType
             'email',
             EmailListType::class,
             [
-                'label' => 'mautic.lead.email.template',
+                'label' => 'mautic.companypoints.sendemail.email.template',
                 'label_attr' => ['class' => 'control-label'],
                 'attr' => [
                     'class' => 'form-control',

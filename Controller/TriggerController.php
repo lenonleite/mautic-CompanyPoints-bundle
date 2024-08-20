@@ -53,9 +53,7 @@ class TriggerController extends FormController
                 'orderByDir' => $orderByDir,
             ]
         );
-        //        dd($triggers);
         $request->getSession()->set('mautic.companypoint.trigger.filter', $search);
-        //        dump($triggers);
         $count = count($triggers);
 
         if ($count && $count < ($start + 1)) {
@@ -85,7 +83,6 @@ class TriggerController extends FormController
                 'permissions' => $permissions,
                 'tmpl'        => $request->isXmlHttpRequest() ? $request->get('tmpl', 'index') : 'index',
             ],
-            //            'contentTemplate' => 'MauticPlugin\LeuchtfeuerCompanyPointsBundle\Controller\TriggerController::indexAction',
             'contentTemplate' => '@LeuchtfeuerCompanyPoints/Trigger/list.html.twig',
             'passthroughVars' => [
                 'activeLink'    => '#mautic_company_pointtrigger_index',
