@@ -5,13 +5,17 @@ namespace MauticPlugin\LeuchtfeuerCompanyPointsBundle\EventListener;
 
 use Mautic\EmailBundle\Helper\MailHelper;
 use Mautic\EmailBundle\Model\EmailModel;
+use Mautic\LeadBundle\Entity\Company;
 use Mautic\UserBundle\Model\UserModel;
+use MauticPlugin\LeuchtfeuerCompanyPointsBundle\Entity\CompanyPoint;
 use MauticPlugin\LeuchtfeuerCompanyPointsBundle\Event\CompanyTriggerBuilderEvent;
 use MauticPlugin\LeuchtfeuerCompanyPointsBundle\Form\Type\CompanySubmitActionEmailType;
 use MauticPlugin\LeuchtfeuerCompanyPointsBundle\LeuchtfeuerCompanyPointsEvents;
 use MauticPlugin\LeuchtfeuerCompanyPointsBundle\Model\CompanyTriggerModel;
+use MauticPlugin\LeuchtfeuerCompanyTagsBundle\Entity\CompanyTags;
 use MauticPlugin\LeuchtfeuerCompanyTagsBundle\Event\CompanyTagsEvent;
 use MauticPlugin\LeuchtfeuerCompanyTagsBundle\LeuchtfeuerCompanyTagsEvents;
+use MauticPlugin\LeuchtfeuerCompanyTagsBundle\Model\CompanyTagModel;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class SendEmailSubscriber implements EventSubscriberInterface
@@ -22,7 +26,8 @@ class SendEmailSubscriber implements EventSubscriberInterface
         private CompanyTriggerModel $companyTriggerModel,
         private MailHelper          $mailHelper,
         private UserModel           $userModel,
-        private EmailModel          $emailModel
+        private EmailModel          $emailModel,
+        private CompanyTagModel     $companyTagModel,
     )
     {
     }
@@ -115,7 +120,8 @@ class SendEmailSubscriber implements EventSubscriberInterface
                 if (!empty($properties['bcc'])) {
                     $this->mailHelper->addBcc($properties['bcc']);
                 }
-
+                $tokens = $this->getTokens($event->getCompany());
+                $this->mailHelper->setTokens($tokens);
                 $this->mailHelper->send();
                 $this->mailHelper->reset();
             }
@@ -124,5 +130,26 @@ class SendEmailSubscriber implements EventSubscriberInterface
                 $eventTrigger
             );
         }
+    }
+
+    private function getTokens(Company $company): array
+    {
+        $fields = $company->getFields();
+        $companyTags = $this->companyTagModel->getTagsByCompany($company);
+        $companyTagsString = '';
+        foreach ($companyTags as $companyTag) {
+            $companyTagsString .= $companyTag->getName() . ', ';
+        }
+
+        return [
+            '{company_name}' => $company->getName(),
+            '{country}' => $company->getCountry(),
+            '{industry_tags}' => $fields['core']['companyindustry_tags']['value']??'',
+            '{companynumber_of_employees}' => $fields['professional']['companynumber_of_employees']['value']??'',
+            '{companyannual_revenue}' => $fields['professional']['companyannual_revenue']['value']??'',
+            '{company_score}' => $fields['core']['score_calculated']['value']??'',
+            '{company_tags}' => $companyTagsString,
+            '{company_segments}' => 'test company segments',
+        ];
     }
 }
