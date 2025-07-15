@@ -175,7 +175,7 @@ class TriggerController extends FormController
 
         $session      = $request->getSession();
         $pointTrigger = $request->request->get('companypointtrigger') ?? [];
-        $sessionId    = $pointTrigger['sessionId'] ?? 'mautic_'.sha1(uniqid((string)random_int(1, PHP_INT_MAX), true));
+        $sessionId    = $pointTrigger['sessionId'] ?? 'mautic_'.sha1(uniqid((string) random_int(1, PHP_INT_MAX), true));
 
         if (!$this->security->isGranted('companypoint:triggers:create')) {
             return $this->accessDenied();
@@ -403,23 +403,18 @@ class TriggerController extends FormController
             // lock the entity
             $model->lockEntity($entity);
         }
-
-        if ($cleanSlate) {
-            // clean slate
-            $this->clearSessionComponents($request, $objectId);
-
-            // load existing events into session
-            $triggerEvents   = [];
-            $existingActions = $entity->getEvents()->toArray();
-            foreach ($existingActions as $a) {
-                $id     = $a->getId();
-                $action = $a->convertToArray();
-                unset($action['form']);
-                $triggerEvents[$id] = $action;
-            }
-            $session->set('mautic.companypoint.'.$objectId.'.triggerevents.modified', $triggerEvents);
-            $deletedEvents = [];
+        $this->clearSessionComponents($request, $objectId);
+        // load existing events into session
+        $triggerEvents   = [];
+        $existingActions = $entity->getEvents()->toArray();
+        foreach ($existingActions as $a) {
+            $id     = $a->getId();
+            $action = $a->convertToArray();
+            unset($action['form']);
+            $triggerEvents[$id] = $action;
         }
+        $session->set('mautic.companypoint.'.$objectId.'.triggerevents.modified', $triggerEvents);
+        $deletedEvents = [];
 
         return $this->delegateView([
             'viewParameters' => [
